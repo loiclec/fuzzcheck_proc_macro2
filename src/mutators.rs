@@ -1,12 +1,10 @@
 use fuzzcheck::mutators::character_classes::CharacterMutator;
 use fuzzcheck::mutators::integer_within_range::U8WithinRangeMutator;
-use fuzzcheck::mutators::map::MapMutator;
 use fuzzcheck::mutators::recursive::RecurToMutator;
-use fuzzcheck::mutators::unit::UnitMutator;
 use fuzzcheck::mutators::vector::VecMutator;
-use fuzzcheck::{make_mutator, DefaultMutator, Mutator};
+use fuzzcheck::{make_mutator, DefaultMutator};
 
-use crate::{Delimiter, Group, Ident, Literal, Punct, Spacing, Span, TokenStream, TokenTree};
+use crate::{Delimiter, Group, Ident, Literal, Punct, Spacing, TokenStream, TokenTree};
 
 make_mutator! {
     name: DelimiterMutator,
@@ -16,8 +14,6 @@ make_mutator! {
             Parenthesis,
             Brace,
             Bracket,
-            #[ignore_variant]
-            None(()),
         }
 }
 
@@ -32,13 +28,6 @@ make_mutator! {
 }
 
 make_mutator! {
-    name: SpanMutator,
-    default: true,
-    type:
-        pub struct Span;
-}
-
-make_mutator! {
     name: PunctMutator,
     default: true,
     type:
@@ -47,7 +36,6 @@ make_mutator! {
         ch: char,
         #[field_mutator(<Spacing as DefaultMutator>::Mutator = { Spacing::default_mutator() } )]
         spacing: Spacing,
-        // span: Span,
     }
 }
 
@@ -110,9 +98,7 @@ make_mutator! {
         }
 }
 
-type IdentSymMutator = impl Mutator<String>;
-
-static KEYWORDS: [&str; 58] = [
+pub static KEYWORDS: [&str; 58] = [
     "abstract",
     "as",
     "async",
@@ -173,25 +159,13 @@ static KEYWORDS: [&str; 58] = [
     "c",
 ];
 
-#[no_coverage]
-fn ident_mutator() -> IdentSymMutator {
-    MapMutator::new(
-        U8WithinRangeMutator::new(..KEYWORDS.len() as u8),
-        |string: &String| KEYWORDS.iter().position(|&x| x == string).map(|x| x as u8),
-        |x| KEYWORDS[*x as usize].to_owned(),
-        |x, _orig_cplx| x.len() as f64,
-    )
-}
-
 make_mutator! {
     name: IdentMutator,
     default: true,
     type:
         pub struct Ident {
-            #[field_mutator(IdentSymMutator = { ident_mutator() } )]
-            sym: String,
-            #[field_mutator(UnitMutator<bool> = { UnitMutator::new(false, 1.0) } )]
-            raw: bool,
+            #[field_mutator(U8WithinRangeMutator = { U8WithinRangeMutator::new(..KEYWORDS.len() as u8) } )]
+            sym: u8,
         }
 }
 
@@ -200,45 +174,21 @@ make_mutator! {
     default: true,
     type:
         pub struct Literal {
-            #[field_mutator(LiteralReprMutator = { literal_repr_mutator() })]
-            repr: String,
-            // span: Span,
+            #[field_mutator(U8WithinRangeMutator = { U8WithinRangeMutator::new(..7) })]
+            repr: u8,
         }
 }
 
-type LiteralReprMutator = impl Mutator<String>;
+#[cfg(test)]
+mod tests {
+    use fuzzcheck::mutators::testing_utilities::test_mutator;
+    use fuzzcheck::DefaultMutator;
 
-#[no_coverage]
-fn literal_repr_mutator() -> LiteralReprMutator {
-    MapMutator::new(
-        U8WithinRangeMutator::new(..8),
-        |x: &String| {
-            Some(match x.as_bytes() {
-                b"1_u8" => 0,
-                b"2" => 1,
-                b"0.1_f32" => 2,
-                b"1.1" => 3,
-                b"\"s\"" => 4,
-                b"r#\"raw\"#" => 5,
-                b"b'a'" => 6,
-                b"b\"bs\"" => 7,
-                _ => return None,
-            })
-        },
-        |x| {
-            match x {
-                0 => "1_u8",
-                1 => "2",
-                2 => "0.1_f32",
-                3 => "1.1",
-                4 => "\"s\"",
-                5 => r###"r#"raw"#"###,
-                6 => "b'a'",
-                7 => "b\"bs\"",
-                _ => unreachable!(),
-            }
-            .to_owned()
-        },
-        |x, _orig_cplx| x.len() as f64,
-    )
+    use super::TokenStream;
+
+    #[test]
+    fn test_token_stream_mutator() {
+        let m = TokenStream::default_mutator();
+        test_mutator(m, 400., 400., false, true, 1000, 1000);
+    }
 }
