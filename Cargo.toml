@@ -8,5 +8,3 @@ edition = "2021"
 [dependencies]
 fuzzcheck = { path = "/Users/loic/Code/fuzzcheck-rs/fuzzcheck", version = "0.11", default_features = false }
 proc-macro2 = "1.0.36"
-serde = { version = "1.0.136", features = ["derive"] }
-unicode-xid = "0.2.2"
