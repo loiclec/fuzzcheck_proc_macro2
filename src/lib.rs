@@ -56,3 +56,14 @@ pub struct Ident {
 pub struct Literal {
     repr: u8,
 }
+
+// #[cfg(test)]
+// mod tests {
+//     #[test]
+//     fn test_roundtrip() {
+//         let ts = quote::quote!(
+//             _/
+//         );
+//         println!("{ts:?}");
+//     }
+// }

@@ -181,7 +181,10 @@ impl FromStr for TokenStream {
 
     #[no_coverage]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        proc_macro2::TokenStream::from_str(s).map(|x| x.into())
+        proc_macro2::TokenStream::from_str(s).map(
+            #[no_coverage]
+            |x| x.into(),
+        )
     }
 }
 

@@ -32,7 +32,7 @@ make_mutator! {
     default: true,
     type:
     pub struct Punct {
-        #[field_mutator(CharacterMutator = { CharacterMutator::new(vec!['!' ..= '!', '#'..='\'', '*' ..= '/', ':' ..= '@', '^' ..= '_', '|' ..= '|', '~' ..= '~']) })]
+        #[field_mutator(CharacterMutator = { CharacterMutator::new(vec!['!' ..= '!', '#'..='\'', '*' ..= '/', ':' ..= '@', '^' ..= '^', '|' ..= '|', '~' ..= '~']) })]
         ch: char,
         #[field_mutator(<Spacing as DefaultMutator>::Mutator = { Spacing::default_mutator() } )]
         spacing: Spacing,
@@ -98,7 +98,8 @@ make_mutator! {
         }
 }
 
-pub static KEYWORDS: [&str; 58] = [
+pub static KEYWORDS: [&str; 59] = [
+    "_",
     "abstract",
     "as",
     "async",
