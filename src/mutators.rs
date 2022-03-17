@@ -32,7 +32,9 @@ make_mutator! {
     default: true,
     type:
     pub struct Punct {
-        #[field_mutator(CharacterMutator = { CharacterMutator::new(vec!['!' ..= '!', '#'..='\'', '*' ..= '/', ':' ..= '@', '^' ..= '^', '|' ..= '|', '~' ..= '~']) })]
+        // ~!@#$%^&*-=+|;:,<.>/?'
+        // ~!@#$%^&*-=+|;:,<.>/?'
+        #[field_mutator(CharacterMutator = { CharacterMutator::new(vec!['!' ..= '!', '#'..='&', '*' ..= '/', ':' ..= '@', '^' ..= '^', '|' ..= '|', '~' ..= '~']) })]
         ch: char,
         #[field_mutator(<Spacing as DefaultMutator>::Mutator = { Spacing::default_mutator() } )]
         spacing: Spacing,
@@ -182,14 +184,16 @@ make_mutator! {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use fuzzcheck::mutators::testing_utilities::test_mutator;
-    use fuzzcheck::DefaultMutator;
+    use fuzzcheck::{DefaultMutator, Mutator};
 
     use super::TokenStream;
 
     #[test]
     fn test_token_stream_mutator() {
         let m = TokenStream::default_mutator();
-        test_mutator(m, 400., 400., false, true, 1000, 1000);
+        test_mutator(m, 400., 400., false, true, 100, 100);
     }
 }

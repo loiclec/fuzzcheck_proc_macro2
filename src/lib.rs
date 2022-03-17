@@ -34,6 +34,7 @@ pub enum TokenTree {
     Ident(Ident),
     Punct(Punct),
     Literal(Literal),
+    Lifetime(Ident),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

@@ -35,24 +35,31 @@ impl From<Group> for proc_macro2::Group {
     }
 }
 
-impl From<TokenTree> for proc_macro2::TokenTree {
-    #[no_coverage]
-    fn from(x: TokenTree) -> Self {
-        match x {
-            TokenTree::Group(x) => proc_macro2::TokenTree::Group(x.into()),
-            TokenTree::Ident(x) => proc_macro2::TokenTree::Ident(x.into()),
-            TokenTree::Punct(x) => proc_macro2::TokenTree::Punct(x.into()),
-            TokenTree::Literal(x) => proc_macro2::TokenTree::Literal(x.into()),
-        }
-    }
-}
-
 impl From<TokenStream> for proc_macro2::TokenStream {
     #[no_coverage]
     fn from(x: TokenStream) -> Self {
         let mut ts = proc_macro2::TokenStream::new();
         for t in x.inner {
-            ts.extend(std::iter::once(Into::<proc_macro2::TokenTree>::into(t)));
+            match t {
+                TokenTree::Group(x) => {
+                    ts.extend(std::iter::once(proc_macro2::TokenTree::Group(x.into())));
+                }
+                TokenTree::Ident(x) => {
+                    ts.extend(std::iter::once(proc_macro2::TokenTree::Ident(x.into())));
+                }
+                TokenTree::Punct(x) => {
+                    ts.extend(std::iter::once(proc_macro2::TokenTree::Punct(x.into())));
+                }
+                TokenTree::Literal(x) => {
+                    ts.extend(std::iter::once(proc_macro2::TokenTree::Literal(x.into())));
+                }
+                TokenTree::Lifetime(x) => {
+                    ts.extend([
+                        proc_macro2::TokenTree::Punct(proc_macro2::Punct::new('\'', proc_macro2::Spacing::Joint)),
+                        proc_macro2::TokenTree::Ident(x.into()),
+                    ]);
+                }
+            }
         }
         ts
     }
@@ -122,24 +129,33 @@ impl From<proc_macro2::Group> for Group {
     }
 }
 
-impl From<proc_macro2::TokenTree> for TokenTree {
-    #[no_coverage]
-    fn from(x: proc_macro2::TokenTree) -> Self {
-        match x {
-            proc_macro2::TokenTree::Group(x) => TokenTree::Group(x.into()),
-            proc_macro2::TokenTree::Ident(x) => TokenTree::Ident(x.into()),
-            proc_macro2::TokenTree::Punct(x) => TokenTree::Punct(x.into()),
-            proc_macro2::TokenTree::Literal(x) => TokenTree::Literal(x.into()),
-        }
-    }
-}
-
 impl From<proc_macro2::TokenStream> for TokenStream {
     #[no_coverage]
     fn from(x: proc_macro2::TokenStream) -> Self {
         let mut ts = TokenStream { inner: vec![] };
-        for t in x {
-            ts.inner.push(t.into());
+        let mut iter = x.into_iter();
+        while let Some(t) = iter.next() {
+            match t {
+                proc_macro2::TokenTree::Group(x) => ts.inner.push(TokenTree::Group(x.into())),
+                proc_macro2::TokenTree::Ident(x) => ts.inner.push(TokenTree::Ident(x.into())),
+                proc_macro2::TokenTree::Punct(x) => {
+                    if x.as_char() == '\'' {
+                        if let Some(proc_macro2::TokenTree::Ident(ident)) = iter.next() {
+                            ts.inner.push(TokenTree::Lifetime(ident.into()));
+                        } else {
+                            panic!("A single quote character is not followed by an identifier");
+                        }
+                    } else {
+                        ts.inner.push(TokenTree::Punct(Punct {
+                            ch: x.as_char(),
+                            spacing: x.spacing().into(),
+                        }));
+                    }
+                }
+                proc_macro2::TokenTree::Literal(x) => {
+                    ts.inner.push(TokenTree::Literal(x.into()));
+                }
+            };
         }
         ts
     }
@@ -152,16 +168,6 @@ impl From<proc_macro2::Ident> for Ident {
             Ident { sym: idx as u8 }
         } else {
             unimplemented!("{x} has no representation in fuzzcheck_proc_macro2");
-        }
-    }
-}
-
-impl From<proc_macro2::Punct> for Punct {
-    #[no_coverage]
-    fn from(x: proc_macro2::Punct) -> Self {
-        Punct {
-            ch: x.as_char(),
-            spacing: x.spacing().into(),
         }
     }
 }
